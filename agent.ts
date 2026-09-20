@@ -18,6 +18,7 @@ type ResponsesBody = {
 type CatalogModel = {
     id: string;
     category: string;
+    community?: boolean;
     input_modalities?: string[];
     supported_endpoints?: string[];
     capabilities?: string[];
@@ -173,8 +174,9 @@ export async function select(
         if (isDead(health.get(m.id))) return false;
         if (!(m.supported_endpoints ?? []).includes("/v1/responses")) return false;
         if (m.id.toLowerCase().includes("frugal")) return false; // never route to yourself
+        if (m.community) return false; // foundation models only — agents are not router targets
         const { prompt, completion } = priceOf(m);
-        if (prompt + completion <= 0) return false; // unpriced agents distort cost ranking
+        if (prompt + completion <= 0) return false; // unpriced entries distort cost ranking
         if (!(m.input_modalities ?? ["text"]).includes("text")) return false;
         if (hasImages && !(m.input_modalities ?? []).includes("image")) return false;
         if (needTools && !(m.capabilities ?? []).includes("tool_calling")) return false;
