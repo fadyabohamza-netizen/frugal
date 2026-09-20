@@ -172,6 +172,9 @@ export async function select(
     const eligible = catalog.filter((m) => {
         if (isDead(health.get(m.id))) return false;
         if (!(m.supported_endpoints ?? []).includes("/v1/responses")) return false;
+        if (m.id.toLowerCase().includes("frugal")) return false; // never route to yourself
+        const { prompt, completion } = priceOf(m);
+        if (prompt + completion <= 0) return false; // unpriced agents distort cost ranking
         if (!(m.input_modalities ?? ["text"]).includes("text")) return false;
         if (hasImages && !(m.input_modalities ?? []).includes("image")) return false;
         if (needTools && !(m.capabilities ?? []).includes("tool_calling")) return false;
