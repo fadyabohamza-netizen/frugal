@@ -49,6 +49,11 @@ candidates it was chosen from.
    an empty catalog falls back to a sane default — the router degrades, never
    crashes.
 
+5. **Foundation models only.** `community` entries (games, agents, tests) are
+   filtered out — they distort cost ranking and are unpredictable. The router
+   never routes to itself or to other agents; every candidate is a real
+   price-listed `/v1/responses` model.
+
 ## Design
 
 | Step | Inputs | Output |
@@ -62,18 +67,24 @@ candidates it was chosen from.
 
 ## Verifying three differently-routed requests
 
-Each request route depends on live catalog cost and 30-minute health, so exact
-model picks drift. Three representative inputs that exercise different tiers
-and produce three different models:
+Three live requests on 2026-09-20 routed to **three different models**, each
+with a different tier and cost (live `/v1/models` + `/models/status?minutes=30`):
 
-1. **Simple question** → FAST slice → cheapest healthy model
-   `"model": "fadyabohamza-netizen/frugal", "input": "What is 2+2?"`
-2. **Tool-using work** → BALANCED slice, requires `tool_calling`
-   `"tools": [{...}], "input": "Look up the docs and summarize them."`
-3. **Reasoning/long-form** → DEEP slice → strongest healthy model
-   `"input": "Prove the Pythagorean theorem and design an architecture for a self-synthesizing AI."`
+| Request | Tier | Model chosen | Health-adjusted est. cost | Live answer |
+|---------|------|--------------|---------------------------|-------------|
+| `"What is 2+2?"` | FAST | `openai/gpt-oss-20b` | 0.000023 pollen ×1.00 (cheapest of 11) | `4` |
+| Calculator tool: multiply 6×7 | BALANCED | `mistralai/mistral-large-3` | 0.000578 pollen ×1.15 (cheapest of 11) | `42` (tool executed) |
+| Prove Pythagorean theorem + design self-synthesizing AI | DEEP | `z-ai/glm-5.3` | 0.009056 pollen ×1.15 (cheapest of 9) | full proof + design |
 
-The header/body trace names the model and the reason for each.
+The chosen model is emitted as a `console.log` JSON trace and, when the caller
+sees a trace, in the `X-Frugal-*` response headers. Note: identical request
+bodies are served from the platform cache, so vary wording between demos.
+
+## Unit tests
+
+`node --experimental-strip-types --test`-compatible suite (21 assertions):
+classification, token/cost math, health penalties, and that self / unpriced /
+community models never win.
 
 ## Files
 
