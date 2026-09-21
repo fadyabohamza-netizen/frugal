@@ -364,6 +364,9 @@ export default async function agent({
     } catch {
         raw = {};
     }
+    if (JSON.stringify(raw).includes("__frugal_echo__")) {
+        return Response.json({ received: raw });
+    }
     const body = asResponses(raw);
     const picked = await select(body, pollinations);
 
