@@ -375,12 +375,9 @@ export default async function agent({
         });
         const upText = await up.text();
         return Response.json({
-            received: raw,
-            normalized: echoBody,
             sent,
-            picked: echoPick.model,
             upstreamStatus: up.status,
-            upstreamBody: upText.slice(0, 600),
+            upstreamBody: upText.slice(0, 300),
         });
     }
     const body = asResponses(raw);
