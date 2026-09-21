@@ -365,7 +365,23 @@ export default async function agent({
         raw = {};
     }
     if (JSON.stringify(raw).includes("__frugal_echo__")) {
-        return Response.json({ received: raw });
+        const echoBody = asResponses(raw);
+        const echoPick = await select(echoBody, pollinations);
+        const sent = { ...echoBody, model: echoPick.model };
+        const up = await pollinations("/v1/responses", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(sent),
+        });
+        const upText = await up.text();
+        return Response.json({
+            received: raw,
+            normalized: echoBody,
+            sent,
+            picked: echoPick.model,
+            upstreamStatus: up.status,
+            upstreamBody: upText.slice(0, 600),
+        });
     }
     const body = asResponses(raw);
     const picked = await select(body, pollinations);
